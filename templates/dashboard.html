@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESG 顧問機器人管理後台</title>
+    <link rel="stylesheet" href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css">
+    <style>
+        .conversation-container {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container py-4">
+        <h1 class="mb-4">ESG 顧問機器人 - 管理後台</h1>
+        
+        <div class="row">
+            <div class="col-lg-4 mb-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>統計資訊</h5>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>使用者總數：</strong> {{ users|length }}</p>
+                        <p><strong>對話總數：</strong> {{ total_conversations }}</p>
+                        <p><strong>今日活躍使用者：</strong> {{ active_today }}</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-8 mb-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>使用者列表</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>名稱</th>
+                                        <th>產業</th>
+                                        <th>最後互動</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for user in users %}
+                                    <tr>
+                                        <td>{{ user.id }}</td>
+                                        <td>{{ user.display_name or '未知' }}</td>
+                                        <td>{{ user.industry or '未指定' }}</td>
+                                        <td>{{ user.last_interaction.strftime('%Y-%m-%d %H:%M') }}</td>
+                                        <td>
+                                            <a href="{{ url_for('view_user', user_id=user.id) }}" class="btn btn-sm btn-info">查看對話</a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

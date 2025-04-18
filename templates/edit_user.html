@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>編輯使用者資訊 - ESG 顧問機器人</title>
+    <link rel="stylesheet" href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css">
+</head>
+<body>
+    <div class="container py-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>編輯使用者資訊</h1>
+            <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">返回儀表板</a>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h5>使用者: {{ user.display_name or '未知使用者' }}</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" action="{{ url_for('update_user', user_id=user.id) }}">
+                    <div class="mb-3">
+                        <label for="display_name" class="form-label">顯示名稱</label>
+                        <input type="text" class="form-control" id="display_name" name="display_name" value="{{ user.display_name or '' }}">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="industry" class="form-label">產業</label>
+                        <select class="form-select" id="industry" name="industry">
+                            <option value="" {% if not user.industry %}selected{% endif %}>請選擇產業</option>
+                            <option value="製造業" {% if user.industry == "製造業" %}selected{% endif %}>製造業</option>
+                            <option value="電子科技" {% if user.industry == "電子科技" %}selected{% endif %}>電子科技</option>
+                            <option value="服務業" {% if user.industry == "服務業" %}selected{% endif %}>服務業</option>
+                            <option value="金融保險" {% if user.industry == "金融保險" %}selected{% endif %}>金融保險</option>
+                            <option value="餐飲業" {% if user.industry == "餐飲業" %}selected{% endif %}>餐飲業</option>
+                            <option value="電商物流" {% if user.industry == "電商物流" %}selected{% endif %}>電商物流</option>
+                            <option value="建築營造" {% if user.industry == "建築營造" %}selected{% endif %}>建築營造</option>
+                            <option value="農林漁牧" {% if user.industry == "農林漁牧" %}selected{% endif %}>農林漁牧</option>
+                            <option value="教育文化" {% if user.industry == "教育文化" %}selected{% endif %}>教育文化</option>
+                            <option value="其他產業" {% if user.industry == "其他產業" %}selected{% endif %}>其他產業</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="role" class="form-label">角色</label>
+                        <select class="form-select" id="role" name="role">
+                            <option value="" {% if not user.role %}selected{% endif %}>請選擇角色</option>
+                            <option value="管理階層" {% if user.role == "管理階層" %}selected{% endif %}>管理階層</option>
+                            <option value="ESG/永續部門" {% if user.role == "ESG/永續部門" %}selected{% endif %}>ESG/永續部門</option>
+                            <option value="環安部門" {% if user.role == "環安部門" %}selected{% endif %}>環安部門</option>
+                            <option value="行銷/公關" {% if user.role == "行銷/公關" %}selected{% endif %}>行銷/公關</option>
+                            <option value="人資部門" {% if user.role == "人資部門" %}selected{% endif %}>人資部門</option>
+                            <option value="財會部門" {% if user.role == "財會部門" %}selected{% endif %}>財會部門</option>
+                            <option value="研發部門" {% if user.role == "研發部門" %}selected{% endif %}>研發部門</option>
+                            <option value="採購部門" {% if user.role == "採購部門" %}selected{% endif %}>採購部門</option>
+                            <option value="一般員工" {% if user.role == "一般員工" %}selected{% endif %}>一般員工</option>
+                            <option value="其他角色" {% if user.role == "其他角色" %}selected{% endif %}>其他角色</option>
+                        </select>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">儲存變更</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

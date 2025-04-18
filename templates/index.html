@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="zh-TW" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESG 顧問 LINE Bot</title>
+    <link rel="stylesheet" href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h1 class="mb-0">ESG 顧問 LINE Bot</h1>
+                        <a href="{{ url_for('dashboard') }}" class="btn btn-outline-info">管理後台</a>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-success" role="alert">
+                            <h4 class="alert-heading">Bot 狀態: <span class="badge bg-success">運行中</span></h4>
+                            <p>您的 LINE Bot webhook 已啟動，可以接收訊息。</p>
+                            <hr>
+                            <p class="mb-0">Webhook URL: <code>{{ request.host_url }}webhook</code></p>
+                        </div>
+                        
+                        <h2 class="mt-4">關於 ESG 顧問機器人</h2>
+                        <p>
+                            ESG 顧問機器人提供專業的永續發展策略建議，幫助企業面對環境、社會和公司治理的各種挑戰。
+                            無論您的企業規模大小，都能獲得實用的 ESG 策略指導。
+                        </p>
+                        
+                        <div class="row mt-4">
+                            <div class="col-md-6">
+                                <div class="card mb-3">
+                                    <div class="card-header">
+                                        <h5>🌿 環境 (Environmental)</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <ul>
+                                            <li>碳盤查與減碳策略</li>
+                                            <li>能源使用效率</li>
+                                            <li>廢棄物管理</li>
+                                            <li>水資源管理</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card mb-3">
+                                    <div class="card-header">
+                                        <h5>👥 社會 (Social)</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <ul>
+                                            <li>員工權益與福利</li>
+                                            <li>供應鏈管理</li>
+                                            <li>社區參與</li>
+                                            <li>客戶關係</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card mb-3">
+                                    <div class="card-header">
+                                        <h5>⚖️ 治理 (Governance)</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <ul>
+                                            <li>企業道德與透明度</li>
+                                            <li>風險管理</li>
+                                            <li>商業誠信</li>
+                                            <li>董事會多元化</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card mb-3">
+                                    <div class="card-header">
+                                        <h5>📊 報告框架</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <ul>
+                                            <li>GRI 全球報告倡議組織</li>
+                                            <li>TCFD 氣候相關財務揭露</li>
+                                            <li>SBTi 科學基礎減量目標</li>
+                                            <li>ISO 14064/14067 標準</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="text-center mt-4">
+                            <p>掃描 QR Code 或在 LINE 上搜尋 Bot 的 ID 即可開始使用!</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
