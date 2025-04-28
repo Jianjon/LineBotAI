@@ -2,6 +2,7 @@ import os
 import logging
 import datetime
 from flask import Flask, request, abort, render_template, jsonify, redirect, url_for
+from markupsafe import Markup
 from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError
 from linebot.models import MessageEvent, TextMessage, TextSendMessage
@@ -9,6 +10,10 @@ from openai_service import generate_response
 import traceback
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase
+
+# Setup logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Base class for SQLAlchemy models
 class Base(DeclarativeBase):
@@ -21,23 +26,23 @@ db = SQLAlchemy(model_class=Base)
 app = Flask(__name__)
 app.secret_key = os.environ.get("SESSION_SECRET")
 
-# Configure database
-DATABASE_URL = os.environ.get("DATABASE_URL")
-if DATABASE_URL:
-    # For SQLAlchemy 1.4+, we need to modify the database URL
-    if DATABASE_URL.startswith("postgres://"):
-        DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
-    app.config["SQLALCHEMY_DATABASE_URI"] = DATABASE_URL
-    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
-        "pool_recycle": 300,
-        "pool_pre_ping": True,
-    }
-else:
-    logging.error("DATABASE_URL environment variable not set!")
+# Configure database - Using SQLite for simplicity
+import os.path
+basedir = os.path.abspath(os.path.dirname(__file__))
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///" + os.path.join(basedir, "app.db")
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+logger.info("Database configuration successful using SQLite")
 
 # Initialize the database with the app
 db.init_app(app)
+
+# 添加自定義濾鏡
+@app.template_filter('nl2br')
+def nl2br_filter(s):
+    """將換行符轉換為 HTML <br> 標籤"""
+    if not s:
+        return ""
+    return Markup(s.replace('\n', '<br>'))
 
 # LINE Bot credentials
 CHANNEL_ACCESS_TOKEN = os.environ.get("LINE_CHANNEL_ACCESS_TOKEN")
@@ -47,8 +52,7 @@ CHANNEL_SECRET = os.environ.get("LINE_CHANNEL_SECRET")
 line_bot_api = LineBotApi(CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(CHANNEL_SECRET)
 
-# Setup logging
-logger = logging.getLogger(__name__)
+# LINE Bot credentials
 
 @app.route("/")
 def index():
@@ -138,6 +142,36 @@ def webhook():
 def health_check():
     """Health check endpoint."""
     return jsonify({"status": "healthy"}), 200
+
+@app.route("/daily-summary", methods=["GET"])
+def view_daily_summaries():
+    """查看每日摘要列表"""
+    from models import DailySummary
+    
+    summaries = DailySummary.query.order_by(DailySummary.summary_date.desc()).all()
+    return render_template("daily_summaries.html", summaries=summaries)
+
+@app.route("/daily-summary/<date>")
+def view_daily_summary(date):
+    """查看特定日期的每日摘要"""
+    from models import DailySummary
+    from datetime import datetime
+    
+    try:
+        # 解析日期格式
+        summary_date = datetime.strptime(date, "%Y-%m-%d").date()
+        summary = DailySummary.query.filter_by(summary_date=summary_date).first_or_404()
+        return render_template("daily_summary.html", summary=summary)
+    except ValueError:
+        abort(404)
+        
+@app.route("/generate-summary", methods=["POST"])
+def generate_summary():
+    """手動生成今日摘要"""
+    from daily_summary_task import manual_run_task
+    
+    result = manual_run_task()
+    return jsonify({"status": "success", "message": result}), 200
 
 @handler.add(MessageEvent, message=TextMessage)
 def handle_text_message(event):

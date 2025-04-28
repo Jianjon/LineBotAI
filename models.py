@@ -1,6 +1,18 @@
 import datetime
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Date
 from app import db
+
+class DailySummary(db.Model):
+    """Model for daily conversation summaries"""
+    __tablename__ = 'daily_summary'
+    
+    id = Column(Integer, primary_key=True)
+    summary_date = Column(Date, unique=True, nullable=False)
+    summary_content = Column(Text, nullable=False)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    
+    def __repr__(self):
+        return f"<DailySummary {self.summary_date}>"
 
 class User(db.Model):
     """Model for LINE users"""

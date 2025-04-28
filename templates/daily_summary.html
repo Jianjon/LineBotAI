@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ summary.summary_date.strftime('%Y-%m-%d') }} 摘要 - ESG 顧問機器人</title>
+    <link rel="stylesheet" href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css">
+</head>
+<body>
+    <div class="container py-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>{{ summary.summary_date.strftime('%Y-%m-%d') }} 摘要</h1>
+            <a href="{{ url_for('view_daily_summaries') }}" class="btn btn-secondary">返回摘要列表</a>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5>摘要內容</h5>
+                <small>建立時間: {{ summary.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+            </div>
+            <div class="card-body">
+                <div class="summary-content">
+                    {{ summary.summary_content|nl2br }}
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

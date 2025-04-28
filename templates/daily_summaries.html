@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>每日摘要列表 - ESG 顧問機器人</title>
+    <link rel="stylesheet" href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css">
+</head>
+<body>
+    <div class="container py-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>每日摘要列表</h1>
+            <div>
+                <button id="generateSummaryBtn" class="btn btn-primary me-2">手動生成今日摘要</button>
+                <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">返回管理後台</a>
+            </div>
+        </div>
+
+        {% if summaries %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5>摘要列表</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>日期</th>
+                                <th>建立時間</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for summary in summaries %}
+                            <tr>
+                                <td>{{ summary.summary_date.strftime('%Y-%m-%d') }}</td>
+                                <td>{{ summary.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                <td>
+                                    <a href="{{ url_for('view_daily_summary', date=summary.summary_date.strftime('%Y-%m-%d')) }}" class="btn btn-sm btn-info">查看詳情</a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="alert alert-info">
+            目前尚無摘要資料。點擊「手動生成今日摘要」按鈕可以生成今日的對話摘要。
+        </div>
+        {% endif %}
+    </div>
+
+    <script>
+    document.getElementById('generateSummaryBtn').addEventListener('click', function() {
+        this.disabled = true;
+        this.textContent = '處理中...';
+        
+        fetch('/generate-summary', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            alert('摘要生成成功: ' + data.message);
+            location.reload();
+        })
+        .catch(error => {
+            alert('發生錯誤: ' + error);
+            this.disabled = false;
+            this.textContent = '手動生成今日摘要';
+        });
+    });
+    </script>
+</body>
+</html>

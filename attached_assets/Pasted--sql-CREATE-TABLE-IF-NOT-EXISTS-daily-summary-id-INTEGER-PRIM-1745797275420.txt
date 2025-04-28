@@ -1,0 +1,99 @@
+【指令一】 請幫我在專案資料庫裡，新增一個新的表格：
+
+sql
+複製
+編輯
+CREATE TABLE IF NOT EXISTS daily_summary (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    summary_date TEXT,
+    summary_content TEXT
+);
+【指令二】 請幫我寫一支 Python 函式，功能如下：
+
+每天晚上8:00執行
+
+撈出今天（當天日期）的聊天紀錄（user, message, timestamp）
+
+把今天的聊天內容合併成一段文字
+
+呼叫 OpenAI GPT，請它用「摘要模式」整理成一段 100～200字的總結
+
+把生成的摘要存入 daily_summary 表
+
+【指令三】 寫一個 daily_summary_task.py（新的檔案），內容包含：
+
+python
+複製
+編輯
+import sqlite3
+import openai
+import datetime
+import schedule
+import time
+
+# 設定你的 OpenAI API key
+openai.api_key = '你的APIKEY'
+
+# 連接資料庫
+def connect_db():
+    return sqlite3.connect('你的資料庫檔案路徑.db')
+
+# 撈取今天的聊天紀錄
+def fetch_today_messages():
+    conn = connect_db()
+    cursor = conn.cursor()
+    today = datetime.date.today().isoformat()
+    cursor.execute("SELECT message FROM chat_log WHERE date(timestamp) = ?", (today,))
+    messages = cursor.fetchall()
+    conn.close()
+    return [msg[0] for msg in messages]
+
+# 產生今日摘要
+def generate_summary(messages):
+    combined_text = "\n".join(messages)
+    prompt = f"請你根據以下聊天內容，摘要成一段100-200字的總結：\n{combined_text}"
+
+    response = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",
+        messages=[
+            {"role": "system", "content": "你是個專業的摘要助手，擅長精簡整理重點。"},
+            {"role": "user", "content": prompt}
+        ]
+    )
+
+    summary = response['choices'][0]['message']['content']
+    return summary
+
+# 將摘要存入資料庫
+def save_summary(summary):
+    conn = connect_db()
+    cursor = conn.cursor()
+    today = datetime.date.today().isoformat()
+    cursor.execute("INSERT INTO daily_summary (summary_date, summary_content) VALUES (?, ?)", (today, summary))
+    conn.commit()
+    conn.close()
+
+# 每日任務
+def daily_task():
+    messages = fetch_today_messages()
+    if messages:
+        summary = generate_summary(messages)
+        save_summary(summary)
+        print(f"已成功生成 {datetime.date.today()} 的摘要")
+    else:
+        print("今天沒有聊天紀錄，不生成摘要")
+
+# 設定每天台灣時間晚上8點執行
+schedule.every().day.at("20:00").do(daily_task)
+
+# 持續跑
+if __name__ == "__main__":
+    while True:
+        schedule.run_pending()
+        time.sleep(60)
+【指令四】 提醒Replit AI注意：
+
+因為是免費版 Replit，無法確保24小時不斷線，所以要搭配Replit Deploy或UptimeRobot定時ping保持運行，否則定時任務會中斷。
+
+也可以改用 Replit 新推出的「Scheduled Jobs」（Beta功能）來安排「每日一次」背景工作（如果有開放）。
+
