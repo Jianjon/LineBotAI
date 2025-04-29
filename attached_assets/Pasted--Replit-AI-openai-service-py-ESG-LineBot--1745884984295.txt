@@ -1,0 +1,288 @@
+## 📜 【Replit AI指令完整範本草稿】
+
+---
+
+請重新開發 `openai_service.py`，目標是建構一個專業的 ESG 顧問型 LineBot 回覆服務，符合以下要求：
+
+1. **知識範圍明確限制：**
+    - 只能使用以下來源知識推論回答：
+        - ISO14064-1、ISO14064-2、ISO14064-3
+        - ISO14067
+        - ISO14068-1
+        - SBTi
+        - WBCSD 指南
+        - 台灣環境部發布的法規與指引
+    - 回答時務必指出引用標準，若無適合標準，誠實說明並提供實務建議。
+2. **問題分類與知識範圍對應：**
+    - 溫室氣體盤查 ➔ ISO14064-1
+    - 減碳專案 ➔ ISO14064-2
+    - 查證驗證 ➔ ISO14064-3
+    - 碳足跡產品 ➔ ISO14067
+    - 碳中和策略 ➔ ISO14068-1
+    - 科學基礎目標 ➔ SBTi
+    - 企業綜合策略 ➔ WBCSD或台灣法規為主
+3. **Daily Summary使用：**
+    - 每次回答時**可選參考最近3天的 daily_summary摘要**，但只有當使用者問題涉及「進度」、「過去提問」時才調用。
+4. **回覆格式要求：**
+    - 回覆字數控制在 200～220 字。
+    - 開頭一句親切友善的句子（例如：「這個問題很重要，我來幫你整理一下！」）
+    - 條列式列出最多 2～3 點，用 emoji（✅ 📌 🔍）開頭每點。
+    - 最後用一段自然的反問句（例如：「方便說明一下您的產業別或目前的需求方向嗎？」）。
+5. **例外處理：**
+    - 若使用者提問不明確，必須主動請對方補充：「產業別、是否需要揭露或查證、目標時程」。
+    - 若問題超出知識範圍，不可亂回答，請明確說：「目前根據台灣法規及國際標準，尚無明確定義，不過可參考...」。
+
+---
+
+# 🧠 【正式版 Multi-Agent openai_service.py 架構】
+
+## 一、總體設計說明
+
+**目標：**
+
+建立一個由 5 個小型 Agent 協作的智能回覆系統，負責解析、組知識、格式化、引導，並且專門限定 ESG 領域知識範圍。
+
+---
+
+## 二、功能分工表
+
+| Agent 名稱 | 角色定位 | 功能說明 |
+| --- | --- | --- |
+| AgentClassifier | 問題分類器 | 判斷使用者問題屬於哪個標準範圍（ISO14064-1/2/3, ISO14067, SBTi, etc.） |
+| AgentKnowledgeAssembler | 知識整合器 | 根據分類結果，組成特定知識背景描述（Prompt Augmentation） |
+| AgentSummaryFetcher | 摘要調用器 | 決定是否需要引入最近3天 daily_summary 來補充背景 |
+| AgentResponseFormatter | 回覆風格整理器 | 將 GPT 回覆加工成條列式、emoji 強調、開場親切語、結尾反問 |
+| AgentStrategicReactor | 對話策略反應器 | 根據使用者問題的完整性，決定是否需要提出反問或補充詢問 |
+| AgentIntentRecognizer | 用來判斷提問意圖（聊天/專業） | 決定啟動「聊天流程」還是「專業推論流程」 |
+
+---
+
+## 三、總流程圖（Mermaid標準格式）
+
+```mermaid
+flowchart TD
+    A[使用者訊息]
+    A --> B(AgentIntentRecognizer：判斷意圖)
+    B -- 聊天 --> C(生成輕鬆友善回答)
+    B -- 專業問題 --> D(AgentClassifier：分類問題)
+    D --> E(AgentKnowledgeAssembler：組知識背景)
+    E --> F(AgentSummaryFetcher：決定要不要引入摘要)
+    F --> G(OpenAI生成回覆)
+    G --> H(AgentResponseFormatter：條列美化＋反問)
+    H --> I(AgentStrategicReactor：判斷需不需要引導深入)
+    C & I --> J[輸出最終回覆]
+
+```
+
+---
+
+## 四、每個Agent基本職責和簡單框架
+
+---
+
+### 1. AgentClassifier.py
+
+```python
+def classify_question(user_message: str) -> str:
+    """
+    分析使用者訊息，分類至適當的 ESG 知識範圍。
+    回傳範圍標籤，例如 "ISO14064-1"、"SBTi"、"WBCSD"。
+    """
+    # 關鍵字快速判斷
+    if "碳盤查" in user_message or "組織碳排" in user_message:
+        return "ISO14064-1"
+    elif "減量專案" in user_message:
+        return "ISO14064-2"
+    elif "查證" in user_message or "第三方查核" in user_message:
+        return "ISO14064-3"
+    elif "碳足跡" in user_message:
+        return "ISO14067"
+    elif "碳中和" in user_message:
+        return "ISO14068-1"
+    elif "SBTi" in user_message:
+        return "SBTi"
+    elif "WBCSD" in user_message or "企業永續指南" in user_message:
+        return "WBCSD"
+    else:
+        return "Unknown"
+
+```
+
+---
+
+### 2. AgentKnowledgeAssembler.py
+
+```python
+def build_knowledge_prompt(scope: str) -> str:
+    """
+    根據分類結果，組合專業背景內容，限制回覆只依據特定標準。
+    """
+    if scope == "ISO14064-1":
+        return "依據 ISO14064-1（組織層級溫室氣體量化與報告）..."
+    elif scope == "ISO14064-2":
+        return "依據 ISO14064-2（減量專案溫室氣體減量）..."
+    elif scope == "SBTi":
+        return "依據 SBTi（科學基礎減碳目標）規範..."
+    # 其他範圍類推
+    else:
+        return "依據台灣環境部與國際標準指引，以下提供分析與建議："
+
+```
+
+---
+
+### 3. AgentSummaryFetcher.py
+
+```python
+def fetch_recent_summaries_if_needed(user_message: str) -> str:
+    """
+    若使用者提問涉及「過去對話」或「進度問題」，引入 recent daily_summary。
+    """
+    if "進度" in user_message or "之前提到" in user_message:
+        # 假設有 daily_summary 資料庫可讀取
+        return retrieve_last_3_days_summary()
+    return ""
+
+```
+
+---
+
+### 4. AgentResponseFormatter.py
+
+```python
+def format_response(raw_response: str) -> str:
+    """
+    將GPT初步回應轉換成條列式 + emoji強調 + 開場親切語 + 結尾反問。
+    """
+    friendly_opening = "很高興收到您的提問，讓我們一起看看重點："
+    formatted_points = raw_response.split("\n")
+    formatted_points = [f"✅ {line}" for line in formatted_points if line.strip()]
+    closing_question = "\n\n📌 方便補充您的產業別或目標時程嗎？讓我能提供更精準建議！"
+    return "\n".join([friendly_opening] + formatted_points + [closing_question])
+
+```
+
+---
+
+### 5. AgentStrategicReactor.py
+
+```python
+def decide_need_followup(user_message: str) -> bool:
+    """
+    判斷問題是否不夠完整，需要引導更多細節。
+    """
+    if any(keyword in user_message for keyword in ["請問", "怎麼做", "建議", "流程", "範例"]):
+        return True
+    return False
+
+```
+
+---
+
+### 6. AgentIntentRecognizer.py （意圖判斷器）
+
+```python
+python
+複製編輯
+def recognize_intent(user_message: str) -> str:
+    """
+    判斷使用者訊息屬於：
+    - "chat"：一般閒聊/寒暄
+    - "professional"：專業問題/需依據標準回答
+    """
+    chat_keywords = ["你好", "謝謝", "在嗎", "哈囉", "請問在嗎", "今天好嗎", "加油", "辛苦了"]
+    professional_keywords = ["碳盤查", "碳足跡", "碳中和", "ISO14064", "SBTi", "環境部", "查證", "減量專案"]
+
+    if any(word in user_message for word in professional_keywords):
+        return "professional"
+    elif any(word in user_message for word in chat_keywords):
+        return "chat"
+    else:
+        # 保守策略，未知預設為專業問題（避免漏掉正經問題）
+        return "professional"
+
+```
+
+# 🛠 統一由 `openai_service.py` 串接
+
+```python
+import os
+import logging
+from openai import OpenAI
+
+# 導入各個小Agent
+from AgentIntentRecognizer import recognize_intent
+from AgentClassifier import classify_question
+from AgentKnowledgeAssembler import build_knowledge_prompt
+from AgentSummaryFetcher import fetch_recent_summaries_if_needed
+from AgentResponseFormatter import format_response
+from AgentStrategicReactor import decide_need_followup
+
+# OpenAI API key
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
+openai = OpenAI(api_key=OPENAI_API_KEY)
+
+# Setup logging
+logger = logging.getLogger(__name__)
+
+def generate_response(user_message: str) -> str:
+    """
+    Multi-Agent版，根據使用者訊息智能分流並產生回覆
+    """
+    try:
+        # Step 1: 判斷是聊天還是專業問題
+        intent = recognize_intent(user_message)
+        
+        # Step 2: 如果是普通聊天，簡單回覆
+        if intent == "chat":
+            return generate_casual_chat_response(user_message)
+
+        # Step 3: 如果是專業問題，啟動完整Multi-Agent流程
+        # (1) 分類問題
+        category = classify_question(user_message)
+        
+        # (2) 組合知識背景Prompt
+        knowledge_prompt = build_knowledge_prompt(category)
+        
+        # (3) 決定是否需要引入最近3天摘要
+        summary_context = fetch_recent_summaries_if_needed(user_message)
+        
+        # (4) 建立最終Prompt
+        full_prompt = f"{knowledge_prompt}\n\n{summary_context}\n\n使用者提問：{user_message}"
+        
+        # (5) 呼叫 OpenAI GPT-4o
+        response = openai.chat.completions.create(
+            model="gpt-4o",
+            messages=[
+                {"role": "system", "content": full_prompt},
+                {"role": "user", "content": user_message}
+            ],
+            max_tokens=250,
+            temperature=0.55
+        )
+        
+        # (6) 美化格式：條列、emoji、開場親切語、結尾反問
+        raw_reply = response.choices[0].message.content.strip()
+        final_reply = format_response(raw_reply)
+        
+        return final_reply
+
+    except Exception as e:
+        logger.error(f"Error generating OpenAI response: {e}")
+        return "抱歉，我暫時無法處理您的請求，請稍後再試。"
+
+def generate_casual_chat_response(user_message: str) -> str:
+    """
+    回覆輕鬆聊天型訊息，保持親切、簡短。
+    """
+    casual_responses = [
+        "嗨嗨！希望你今天心情不錯呀🌟",
+        "哈囉～有任何ESG相關問題也可以隨時問我喔📚",
+        "很高興看到你的訊息！保持好心情唷🌈"
+    ]
+    # 可以用簡單隨機選一個，這裡直接選第一個示範
+    return casual_responses[0]
+
+```
+
+---
